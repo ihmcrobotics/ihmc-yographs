@@ -18,13 +18,11 @@ import javafx.scene.shape.Polyline;
 import us.ihmc.graphicsDescription.graphInterfaces.GraphIndicesHolder;
 import us.ihmc.graphicsDescription.graphInterfaces.SelectedVariableHolder;
 import us.ihmc.yoVariables.dataBuffer.*;
+import us.ihmc.yoVariables.listener.RewoundListener;
 import us.ihmc.yoVariables.variable.YoVariable;
 
 import javax.swing.*;
-import java.text.FieldPosition;
-import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -64,7 +62,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Graph data is scaled upon each repaint.
  */
 public class YoGraph extends Pane
-      implements EventHandler<Event>, GraphConfigurationChangeListener, DataEntryChangeListener, DataBufferChangeListener, IndexChangedListener
+      implements EventHandler<Event>, GraphConfigurationChangeListener, IndexChangedListener, DataEntryChangeListener, RewoundListener, DataBufferChangeListener
 {
    private static int DEFAULT_MAX_ENTRIES = 4;
 
