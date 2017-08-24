@@ -1,0 +1,54 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.us.ihmc.gradle:ihmc-build:0.0.19"
+    }
+}
+
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: "us.ihmc.gradle.ihmc-build"
+
+sourceCompatibility = 1.8
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src"]
+        }
+    }
+}
+
+repositories {
+    maven {
+        url  "http://dl.bintray.com/ihmcrobotics/maven-release" // IHMC Code releases
+    }
+
+    maven {
+        url  "http://dl.bintray.com/ihmcrobotics/maven-vendor" // Third-party libraries that we have vendored for various reasons
+    }
+
+    /*  Artifactory instance hosted at IHMC for some legacy vendored
+     *  dependencies without live source access that can't be uploaded
+     *  to Bintray.
+    */
+    maven {
+        url "https://artifactory.ihmc.us/artifactory/thirdparty/"
+    }
+
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    compile ihmc.getProjectDependency(":IHMCYoVariables")
+    //compile group: 'us.ihmc', name: 'ihmc-yovariables', version: '0.1.0'
+
+    compile ihmc.getProjectDependency(":IHMCGraphicsDescription")
+}
