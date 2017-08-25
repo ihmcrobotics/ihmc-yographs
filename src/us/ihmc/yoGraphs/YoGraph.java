@@ -15,8 +15,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polyline;
-import us.ihmc.graphicsDescription.graphInterfaces.GraphIndicesHolder;
-import us.ihmc.graphicsDescription.graphInterfaces.SelectedVariableHolder;
+import us.ihmc.yoGraphs.graphInterfaces.GraphIndicesHolder;
+import us.ihmc.yoGraphs.graphInterfaces.SelectedVariableHolder;
 import us.ihmc.yoVariables.dataBuffer.*;
 import us.ihmc.yoVariables.listener.RewoundListener;
 import us.ihmc.yoVariables.variable.YoVariable;
@@ -78,7 +78,7 @@ public class YoGraph extends Pane
 
    private GraphConfiguration graphConfiguration = new GraphConfiguration("default");
 
-   private final JFrame parentFrame;
+   //private final JFrame parentFrame;
 
    private final TimeDataHolder timeDataHolder;
    private final DataEntryHolder dataEntryHolder;
@@ -144,7 +144,7 @@ public class YoGraph extends Pane
    }
 
    public YoGraph(GraphIndicesHolder graphIndicesHolder, SelectedVariableHolder holder, DataEntryHolder dataEntryHolder,
-         TimeDataHolder timeDataHolder, JFrame jFrame)
+         TimeDataHolder timeDataHolder)//, JFrame jFrame)
    {
       // Initialize all necessary fields
 
@@ -152,7 +152,7 @@ public class YoGraph extends Pane
       this.dataEntryHolder = dataEntryHolder;
       this.timeDataHolder = timeDataHolder;
       this.graphIndicesHolder = graphIndicesHolder;
-      this.parentFrame = jFrame;
+      //this.parentFrame = jFrame;
       this.entries = new ArrayList<>();
 
       // Event handler for changing graph config
@@ -1336,11 +1336,11 @@ public class YoGraph extends Pane
       // Double click brings up var properties dialog box.
       if ((evt.getClickCount() == 2) && (!entries.isEmpty()))
       {
-         if (parentFrame != null)
-         {
-            GraphPropertiesDialog dialog = new GraphPropertiesDialog(parentFrame, this);
+         //if (parentFrame != null)
+         //{
+            GraphPropertiesDialog dialog = new GraphPropertiesDialog(this);
             dialog.show();
-         }
+         //}
       }
 
       // Right click places and deletes graphs:

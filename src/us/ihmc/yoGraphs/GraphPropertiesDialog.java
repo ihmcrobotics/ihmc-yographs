@@ -19,16 +19,16 @@ public class GraphPropertiesDialog extends Stage implements EventHandler<javafx.
    private final Button okButton, applyButton, cancelButton;
    private final GraphPropertiesPanel graphPropertiesPanel;
    private final VarPropertiesPanel[] varPropertiesPanels;
-   private final JFrame parentFrame;
-   private final YoGraph graph;
+   //private JFrame parentFrame;
+   //private YoGraph graph;
 
-   public GraphPropertiesDialog(JFrame frame, YoGraph graph) {
+   public GraphPropertiesDialog(YoGraph graph) {
       super();
 
       this.setTitle("Graph Properties");
 
-      this.parentFrame = frame;
-      this.graph = graph;
+      //this.parentFrame = frame;
+      //this.graph = graph;
 
       GridPane main = new GridPane();
       main.setPadding(new Insets(10, 10, 10, 10));
@@ -75,11 +75,11 @@ public class GraphPropertiesDialog extends Stage implements EventHandler<javafx.
 
       main.getChildren().add(buttons);
 
-      Dimension frameSize = frame.getSize();
+      //Dimension frameSize = frame.getSize();
 
       this.setScene(new Scene(main));
-      this.setX(frameSize.width / 4);
-      this.setY(frameSize.height / 2);
+      //this.setX(frameSize.width / 4);
+      //this.setY(frameSize.height / 2);
       this.setResizable(false);
       this.show();
 
@@ -107,6 +107,6 @@ public class GraphPropertiesDialog extends Stage implements EventHandler<javafx.
          this.hide();
       }
 
-      parentFrame.repaint(); // TODO: This is a horrible way to get the graphs to repaint...
+      //parentFrame.repaint(); // TODO: This is a horrible way to get the graphs to repaint...
    }
 }

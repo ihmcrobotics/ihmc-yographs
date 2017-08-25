@@ -2,11 +2,11 @@ package us.ihmc.yoGraphs;
 
 public interface GraphConfigurationChangeListener
 {
-   public abstract void notifyOfGraphTypeChange();
+   void notifyOfGraphTypeChange();
 
-   public abstract void notifyOfBaselineChange();
+   void notifyOfBaselineChange();
 
-   public abstract void notifyOfScaleChange();
+   void notifyOfScaleChange();
 
-   public abstract void notifyOfDisplayChange();
+   void notifyOfDisplayChange();
 }
