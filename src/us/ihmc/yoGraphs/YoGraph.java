@@ -10,6 +10,7 @@ import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
@@ -64,51 +65,63 @@ import java.util.concurrent.ConcurrentHashMap;
 public class YoGraph extends Pane
       implements EventHandler<Event>, GraphConfigurationChangeListener, IndexChangedListener, DataEntryChangeListener, RewoundListener, DataBufferChangeListener
 {
-   private static int DEFAULT_MAX_ENTRIES = 4;
 
    private static Color[] dataColors = {Color.rgb(0xa0, 0, 0), Color.rgb(0, 0, 0xff), Color.rgb(0, 0x80, 0), Color.rgb(0, 0, 0), Color.rgb(0x80, 0x80, 0x80),
          Color.rgb(0x80, 0, 0x80), Color.rgb(0, 0x80, 0x80), Color.rgb(0x60, 0x60, 0), Color.rgb(0xff, 0x50, 0x50), Color.rgb(0x50, 0xff, 0xff)};
 
    private static Color[] baselineColors = {Color.rgb(0x93, 0x70, 0xDB), Color.rgb(0x3C, 0xB3, 0x71), Color.ORANGE, Color.ORANGE, Color.ORANGE, Color.ORANGE};
 
+   private static final int DEFAULT_MAX_ENTRIES = 4;
+
    private static final int DONT_PLOT_BOTTOM_PIXELS = 25;
+
    private static final int PIXELS_PER_BOTTOM_ROW = 14;
+
    private static final int DONT_PLOT_TIMELINE_BOTTOM_PIXELS = 16;
+
    private static final int DONT_PLOT_TOP_PIXELS = 5;
+
+   public final static int MAX_NUM_GRAPHS = 10;
+
+   public final static int MAX_NUM_BASELINES = 6;
+
+   private static Object sourceOfDrag = null;
+
+   private static Object recipientOfDrag = null;
+
+   private static int actionPerformedByDragAndDrop = -1;
+
+   private final TimeDataHolder timeDataHolder;
+
+   private final DataEntryHolder dataEntryHolder;
+
+   private final GraphIndicesHolder graphIndicesHolder;
+
+   private final SelectedVariableHolder selectedVariableHolder;
+
+   private final ArrayList<YoGraphDeletionListener> deletionListeners = new ArrayList<>();
+
+   private final ArrayList<Integer> entryNamePaintWidths = new ArrayList<>();
+
+   private final ArrayList<Integer> entryNamePaintRows = new ArrayList<>();
+
+   private final ArrayList<DataEntry> entries = new ArrayList<>();
+
+   private final ContextMenu popupMenu = new ContextMenu();
+
+   private final MenuItem delete = new javafx.scene.control.MenuItem("Delete Graph");
 
    private GraphConfiguration graphConfiguration = new GraphConfiguration("default");
 
-   //private final JFrame parentFrame;
+   private double min = 0.0;
 
-   private final TimeDataHolder timeDataHolder;
-   private final DataEntryHolder dataEntryHolder;
-   private final GraphIndicesHolder graphIndicesHolder;
-   private ArrayList<YoGraphDeletionListener> deletionListeners = new ArrayList<>();
-
-   public final static int MAX_NUM_GRAPHS = 10;
-   public final static int MAX_NUM_BASELINES = 6;
-   public final static int VAR_NAME_SPACING_FOR_PRINT = 160;
-
-   private final ArrayList<DataEntry> entries;
-   private final SelectedVariableHolder selectedVariableHolder;
-
-   private double min = 0.0, max = 1.1;
-
-   private final ArrayList<Integer> entryNamePaintWidths = new ArrayList<>();
-   private final ArrayList<Integer> entryNamePaintRows = new ArrayList<>();
-   private int totalEntryNamePaintRows = 1;
-   private ContextMenu popupMenu;
-   private javafx.scene.control.MenuItem delete;
-
-   private static int actionPerformedByDragAndDrop = -1;
-   private static Object sourceOfDrag = null;
-   private static Object recipientOfDrag = null;
-
-   private YoGraphAnimator animation;
+   private double max = 0.1;
 
    private Canvas info = new Canvas(), index = new Canvas();
 
    private int focusedBaseLine = 0;
+
+   private int totalEntryNamePaintRows = 1;
 
    private class YoGraphAnimator extends AnimationTimer
    {
@@ -134,30 +147,36 @@ public class YoGraph extends Pane
          }
          else
          {
-            if (shouldRepaintEntriesAgainstTime.size() > 0) {
-               shouldRepaintEntriesAgainstTime.forEach((entry, indices) -> paintTimeEntryData(entry, indices.getKey(), indices.getValue()));
+            shouldRepaintEntriesAgainstTime.forEach((entry, indices) -> {
+               if (entry.hasMinMaxChanged())
+               {
+                  paintTimeEntryData(entry, graphIndicesHolder.getLeftPlotIndex(), graphIndicesHolder.getRightPlotIndex());
+               }
+               else
+               {
+                  paintTimeEntryData(entry, indices.getKey(), indices.getValue());
+               }
+            });
 
-               shouldRepaintEntriesAgainstTime.clear();
-            }
+            shouldRepaintEntriesAgainstTime.clear();
          }
       }
    }
 
-   public YoGraph(GraphIndicesHolder graphIndicesHolder, SelectedVariableHolder holder, DataEntryHolder dataEntryHolder,
-         TimeDataHolder timeDataHolder)//, JFrame jFrame)
+   public YoGraph(YoGraphManager manager, SelectedVariableHolder holder, DataEntryHolder dataEntryHolder, TimeDataHolder timeDataHolder)
    {
+      manager.add(this);
+
       // Initialize all necessary fields
-
       this.selectedVariableHolder = holder;
-      this.dataEntryHolder = dataEntryHolder;
-      this.timeDataHolder = timeDataHolder;
-      this.graphIndicesHolder = graphIndicesHolder;
 
-      //this.parentFrame = jFrame;
-      this.entries = new ArrayList<>();
+      this.dataEntryHolder = dataEntryHolder;
+
+      this.timeDataHolder = timeDataHolder;
+
+      this.graphIndicesHolder = manager;
 
       // Event handler for changing graph config
-
       this.graphConfiguration.addChangeListener(this);
 
       // Caching to save rendering
@@ -189,24 +208,18 @@ public class YoGraph extends Pane
       });
 
       // Event handlers for mouse/key
-
       this.addEventHandler(javafx.scene.input.MouseEvent.ANY, this);
+
       this.addEventHandler(javafx.scene.input.KeyEvent.ANY, this);
-
-      // Initializing popup menu
-
-      this.popupMenu = new ContextMenu();
 
       this.setOnContextMenuRequested(e ->
       {
          this.popupMenu.show(this, e.getScreenX(), e.getScreenY());
       });
 
-      delete = new javafx.scene.control.MenuItem("Delete Graph");
       delete.addEventHandler(Event.ANY, this);
 
-      this.animation = new YoGraphAnimator();
-      this.animation.start();
+      new YoGraphAnimator().start();
    }
 
    public GraphConfiguration getGraphConfiguration()
@@ -616,76 +629,6 @@ public class YoGraph extends Pane
       return c;
    }
 
-   protected synchronized void printGraph(int printWidth, int printHeight)
-   {
-      int inPoint = graphIndicesHolder.getInPoint();
-      int outPoint = graphIndicesHolder.getOutPoint();
-
-      int numVars = entries.size();
-      if (numVars == 0)
-      {
-         return;
-      }
-
-      int cumOffset = 3;
-
-      // Here we use one scale for all the graphs:
-      this.recalculateMinMax();
-
-      for (int i = 0; i < numVars; i++)
-      {
-         cumOffset = i * ((int) (VAR_NAME_SPACING_FOR_PRINT * 0.6)) + 3;
-
-         DataEntry entry = entries.get(i);
-         double[] data = entry.getData();
-
-         double minVal = 0.0, maxVal = 1.0;
-         if (this.graphConfiguration.getScaleType() == GraphConfiguration.ScaleType.INDIVIDUAL)
-         {
-            if (entry.isAutoScaleEnabled())
-            {
-               minVal = entry.getMin();
-               maxVal = entry.getMax();
-            }
-            else
-            {
-               minVal = entry.getManualMinScaling();
-               maxVal = entry.getManualMaxScaling();
-            }
-         }
-         else if (this.graphConfiguration.getScaleType() == GraphConfiguration.ScaleType.AUTO)
-         {
-            minVal = this.min;
-            maxVal = this.max;
-         }
-         else if (this.graphConfiguration.getScaleType() == GraphConfiguration.ScaleType.MANUAL)
-         {
-            minVal = this.graphConfiguration.getManualScalingMin();
-            maxVal = this.graphConfiguration.getManualScalingMax();
-         }
-
-         int nPoints = data.length;
-
-         int length;
-         length = (length = ((outPoint - inPoint + 1 + nPoints) % nPoints)) == 0 ? nPoints : length;
-
-         double[] xDataPrint = new double[length];
-         double[] yDataPrint = new double[length];
-
-         for (int j = 0; j < length; j++)
-         {
-            int index = (inPoint + j) % nPoints;
-            xDataPrint[j] = (j * printWidth) / length;
-            yDataPrint[j] =
-                  (printHeight - DONT_PLOT_BOTTOM_PIXELS) - (int) ((data[index] - minVal) / (maxVal - minVal) * (printHeight - DONT_PLOT_BOTTOM_PIXELS));
-         }
-
-         Polyline thisPoly = new Polyline(zip(xDataPrint, yDataPrint));
-         thisPoly.setStroke(dataColors[i % YoGraph.MAX_NUM_GRAPHS]);
-         this.getChildren().add(thisPoly);
-      }
-   }
-
    private void resetCanvasSizes()
    {
       for (Node n : this.getChildren())
@@ -723,12 +666,11 @@ public class YoGraph extends Pane
                {
                   if (child != info && child != index)
                   {
-                     //Platform.runLater(() ->
-                     //{
                      Canvas canvas = (Canvas) child;
+
                      GraphicsContext control = canvas.getGraphicsContext2D();
+
                      control.scale(1.0, (this.max - this.min) / (curMax - curMin));
-                     //});
                   }
                }
             }
@@ -740,6 +682,7 @@ public class YoGraph extends Pane
                if (entry.hasMinMaxChanged())
                {
                   entry.resetMinMaxChanged();
+
                   this.paintTimeEntryData(entry, requestLeftIndex, requestRightIndex - requestLeftIndex);
                }
             }
@@ -1025,6 +968,7 @@ public class YoGraph extends Pane
       if (this.graphConfiguration.getShowBaselines())
       {
          final Canvas forBase = (Canvas) this.getChildren().get((2 * index) + 1);
+
          final GraphicsContext baseLayer = forBase.getGraphicsContext2D();
 
          forBase.setWidth(width);
@@ -1064,6 +1008,7 @@ public class YoGraph extends Pane
       GraphicsContext gc = index.getGraphicsContext2D();
 
       gc.clearRect(0, 0, width, height);
+
       gc.setLineWidth(1.5d);
 
       double linex;
@@ -1338,8 +1283,8 @@ public class YoGraph extends Pane
       {
          //if (parentFrame != null)
          //{
-            GraphPropertiesDialog dialog = new GraphPropertiesDialog(this);
-            dialog.show();
+         GraphPropertiesDialog dialog = new GraphPropertiesDialog(this);
+         dialog.show();
          //}
       }
 
@@ -1487,9 +1432,11 @@ public class YoGraph extends Pane
    private void handleMouseDragged(javafx.scene.input.MouseEvent evt)
    {
       draggedX = evt.getX();
+
       draggedY = evt.getY();
 
       double h = getHeight();
+
       double w = getWidth();
 
       if (draggedX > w)
@@ -1523,21 +1470,25 @@ public class YoGraph extends Pane
          int index = clickIndex(draggedX);
 
          int newLeftIndex = clickedLeftIndex + clickedIndex - index;
+
          int newRightIndex = clickedRightIndex + clickedIndex - index;
 
          if (newLeftIndex < 0)
          {
             newLeftIndex = 0;
+
             newRightIndex = clickedRightIndex - clickedLeftIndex;
          }
 
          if (newRightIndex > graphIndicesHolder.getMaxIndex())
          {
             newRightIndex = graphIndicesHolder.getMaxIndex();
+
             newLeftIndex = newRightIndex - (clickedRightIndex - clickedLeftIndex);
          }
 
          graphIndicesHolder.setLeftPlotIndex(newLeftIndex);
+
          graphIndicesHolder.setRightPlotIndex(newRightIndex);
       }
    }
@@ -1639,23 +1590,38 @@ public class YoGraph extends Pane
    private void shouldRepaintGraph(int fromLeftIndex, int toRightIndex, boolean andOverride)
    {
       this.shouldRepaintPlot = true;
+
       this.shouldRepaintLeft = Math.min(this.shouldRepaintLeft, fromLeftIndex);
+
       this.shouldRepaintRight = Math.max(this.shouldRepaintRight, toRightIndex);
+
       this.shouldOverride |= andOverride;
+
       this.shouldRepaintEntriesAgainstTime.clear();
    }
 
    private void shouldPaintTimeEntryData(DataEntry forEntry, int fromLeftIndex, int forPoints)
    {
-      this.shouldRepaintEntriesAgainstTime.put(forEntry, new javafx.util.Pair<>(fromLeftIndex, forPoints));
+      if (!this.shouldRepaintPlot)
+      {
+         this.shouldRepaintEntriesAgainstTime.put(forEntry, new javafx.util.Pair<>(fromLeftIndex, forPoints));
+      }
    }
 
-   public void attachYoGraphDeletionListener(YoGraphDeletionListener listener) {
+   public void attachYoGraphDeletionListener(YoGraphDeletionListener listener)
+   {
       this.deletionListeners.add(listener);
    }
 
-   public void notifyYoGraphDeletionListeners() {
-      for (YoGraphDeletionListener listener : this.deletionListeners) {
+   public void detachYoGraphDeletionListener(YoGraphDeletionListener listener)
+   {
+      this.deletionListeners.remove(listener);
+   }
+
+   public void notifyYoGraphDeletionListeners()
+   {
+      for (YoGraphDeletionListener listener : this.deletionListeners)
+      {
          listener.notifyOfYoGraphDeletion(this);
       }
    }
@@ -1704,17 +1670,19 @@ public class YoGraph extends Pane
             javafx.util.Pair<Integer, Integer> past = this.shouldRepaintEntriesAgainstTime.get(entry);
 
             int pastLeft = past.getKey();
-            int thisLeft = Math.max(0, index - 1);
-            int newLeft = Math.min(thisLeft, past.getKey());
 
             int pastRight = pastLeft + past.getValue();
-            int thisRight = thisLeft + 2;
-            int newRight = Math.max(pastRight, thisRight);
 
-            int newPoints = newRight - newLeft;
+            int thisLeft = Math.max(0, index - 1);
 
-            this.shouldPaintTimeEntryData(entry, newLeft, newPoints);
-         } else {
+            int newLeft = Math.min(thisLeft, pastLeft);
+
+            int newRight = Math.max(pastRight, thisLeft + 2);
+
+            this.shouldPaintTimeEntryData(entry, newLeft, newRight - newLeft);
+         }
+         else
+         {
             this.shouldPaintTimeEntryData(entry, Math.max(0, index - 1), 2);
          }
       }
