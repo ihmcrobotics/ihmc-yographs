@@ -152,6 +152,7 @@ public class YoGraph extends Pane
       this.dataEntryHolder = dataEntryHolder;
       this.timeDataHolder = timeDataHolder;
       this.graphIndicesHolder = graphIndicesHolder;
+
       //this.parentFrame = jFrame;
       this.entries = new ArrayList<>();
 
@@ -1104,7 +1105,6 @@ public class YoGraph extends Pane
 
    private void paintVariableNamesAndValues()
    {
-
       double height = this.getHeight();
 
       GraphicsContext baselineLayer = info.getGraphicsContext2D();
@@ -1734,7 +1734,7 @@ public class YoGraph extends Pane
       // do nothing; data isn't changing and paintIndexLines will be called anyway
    }
 
-   @Override public void notifyOfIndexChange(int newIndex, double newTime)
+   @Override public void notifyOfIndexChange(int newIndex)
    {
       this.shouldPaintVariableNamesAndValues();
       this.shouldPaintIndexLines();

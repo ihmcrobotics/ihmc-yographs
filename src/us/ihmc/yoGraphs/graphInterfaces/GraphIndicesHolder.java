@@ -1,5 +1,7 @@
 package us.ihmc.yoGraphs.graphInterfaces;
 
+import us.ihmc.yoVariables.dataBuffer.IndexChangedListener;
+
 import java.util.ArrayList;
 
 public interface GraphIndicesHolder
@@ -27,4 +29,12 @@ public interface GraphIndicesHolder
    public abstract ArrayList<Integer> getKeyPoints();
 
    public abstract boolean isIndexAtOutPoint();
+
+   public abstract void attachIndexChangeListener(IndexChangedListener listener);
+
+   public abstract void detachIndexChangeListener(IndexChangedListener listener);
+
+   public abstract void notifyIndexChangeListeners();
+
+
 }
