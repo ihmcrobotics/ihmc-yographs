@@ -15,7 +15,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Polyline;
 import us.ihmc.yoGraphs.graphInterfaces.GraphIndicesHolder;
 import us.ihmc.yoGraphs.graphInterfaces.SelectedVariableHolder;
 import us.ihmc.yoVariables.dataBuffer.*;
@@ -157,9 +156,9 @@ public class YoGraph extends Pane
                   paintTimeEntryData(entry, indices.getKey(), indices.getValue());
                }
             });
-
-            shouldRepaintEntriesAgainstTime.clear();
          }
+
+         shouldRepaintEntriesAgainstTime.clear();
       }
    }
 
@@ -607,26 +606,8 @@ public class YoGraph extends Pane
       for (int i = 0; i < nPoints; i++)
       {
          xData[i] = ((dataX[i] - minX) / (maxX - minX) * width) + offsetFromLeft;
-         yData[i] = height - (int) ((dataY[i] - minY) / (maxY - minY) * height) + offsetFromTop;
+         yData[i] = (height - totalDontPlotBottomPixels) - (int) ((dataY[i] - minY) / (maxY - minY) * height) + offsetFromTop;
       }
-   }
-
-   private double[] zip(double[] a, double[] b)
-   {
-      if (a.length != b.length)
-      {
-         return new double[0];
-      }
-
-      double[] c = new double[a.length + b.length];
-
-      for (int i = 0; i < a.length; ++i)
-      {
-         c[i * 2] = a[i];
-         c[(i * 2) + 1] = b[i];
-      }
-
-      return c;
    }
 
    private void resetCanvasSizes()
@@ -652,28 +633,9 @@ public class YoGraph extends Pane
       {
          if (this.hasMinMaxChanged() || override)
          {
-            double curMin = this.min, curMax = this.max;
-
             this.recalculateMinMax();
 
-            if (override)
-            {
-               this.paintTimePlot(graphIndicesHolder.getLeftPlotIndex(), graphIndicesHolder.getRightPlotIndex());
-            }
-            else
-            {
-               for (Node child : this.getChildren())
-               {
-                  if (child != info && child != index)
-                  {
-                     Canvas canvas = (Canvas) child;
-
-                     GraphicsContext control = canvas.getGraphicsContext2D();
-
-                     control.scale(1.0, (this.max - this.min) / (curMax - curMin));
-                  }
-               }
-            }
+            this.paintTimePlot(graphIndicesHolder.getLeftPlotIndex(), graphIndicesHolder.getRightPlotIndex());
          }
          else
          {
