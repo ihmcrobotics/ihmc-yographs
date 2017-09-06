@@ -1659,7 +1659,7 @@ public class YoGraph extends Pane
       this.shouldRepaintGraph(this.graphIndicesHolder.getLeftPlotIndex(), this.graphIndicesHolder.getRightPlotIndex(), true);
    }
 
-   @Override public void wasRewound()
+   @Override public void notifyOfRewind()
    {
       // do nothing; data isn't changing and paintIndexLines will be called anyway
    }
